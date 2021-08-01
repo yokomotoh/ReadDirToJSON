@@ -1,5 +1,6 @@
 import ftplib
 import json
+import os
 import re
 from datetime import datetime
 
@@ -22,6 +23,22 @@ def get_datetime_format(date_time):
     date_time = datetime.strptime(date_time, "%Y%m%d%H%M%S")
     # convert to human readable date time string
     return date_time.strftime("%Y/%m/%d %H:%M:%S")
+
+import sys
+def splitall(path):
+    allparts = []
+    while 1:
+        parts = os.path.split(path)
+        if parts[0] == path:  # sentinel for absolute paths
+            allparts.insert(0, parts[0])
+            break
+        elif parts[1] == path: # sentinel for relative paths
+            allparts.insert(0, parts[1])
+            break
+        else:
+            path = parts[0]
+            allparts.insert(0, parts[1])
+    return allparts
 
 
 def list_dir_ftp_json(directory):
@@ -68,16 +85,17 @@ def list_dir_ftp_json(directory):
             # ftp.voidcmd("TYPE I")
             file_size = get_size_format(ftp.size(file_name))
 
-        pattern = r'([\w\.\-\ \_]+\.(?:' + 'jpg|png|bmp|JPG|jpeg|JPEG' + '))'
+        pattern = r'([\w\.\-\ \_\?\(\)]+\.(?:' + 'jpg|png|bmp|JPG|jpeg|JPEG' + '))'
         images = re.match(pattern, file_name)
         if images != None:
             # print(f"{file_name:20} {file_size}")
+            dir_elm = splitall(current_dir)
             result[file_name] = {
                 "file_name": file_name,
                 "url": urlhomepath + current_dir + "/" + file_name,
                 "name": "",
                 "directory": current_dir,
-                "category": ["", ""],
+                "category": dir_elm,
                 "date": "",
                 "description": "",
                 "file_size": file_size
@@ -126,7 +144,7 @@ def list_dir_ftp_json(directory):
     ftp.quit()
 
     json_res = json.dumps(result, indent=2)
-    # print(json_res)
+    print(json_res)
 
     with open(filename, 'w') as fp:
         fp.write(json_res)
